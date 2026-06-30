@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BudgetMate</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+}
+
+h1 {
+  text-align: center;
+}
+
+.card {
+  background: #1e293b;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  padding: 10px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2563eb;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row input {
+  flex: 1;
+}
+
+.summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.box {
+  flex: 1;
+  background: #1e293b;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.good { color: #34d399; }
+.bad { color: #fb7185; }
+
+.list {
+  margin-top: 10px;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  border-bottom: 1px solid #334155;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>💰 BudgetMate</h1>
+
+<!-- INCOME -->
+<div class="card">
+  <h3>Income</h3>
+  <input id="wage" type="number" placeholder="Hourly wage" value="20">
+  <input id="hours" type="number" placeholder="Hours per week" value="40">
+</div>
+
+<!-- EXPENSES -->
+<div class="card">
+  <h3>Expenses</h3>
+
+  <div class="row">
+    <input id="ename" placeholder="Expense name">
+    <input id="eamt" type="number" placeholder="Amount">
+  </div>
+
+  <button onclick="addExpense()">Add Expense</button>
+
+  <div class="list" id="list"></div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="box">
+    Income
+    <h3 id="income">$0</h3>
+  </div>
+
+  <div class="box">
+    Expenses
+    <h3 id="expenses">$0</h3>
+  </div>
+
+  <div class="box">
+    Balance
+    <h3 id="balance">$0</h3>
+  </div>
+</div>
+
+</div>
+
+<script>
+let expenses = [];
+
+function calcIncome() {
+  const wage = parseFloat(document.getElementById("wage").value) || 0;
+  const hours = parseFloat(document.getElementById("hours").value) || 0;
+  return wage * hours * 4.33;
+}
+
+function calcExpenses() {
+  return expenses.reduce((a, b) => a + b.amount, 0);
+}
+
+function update() {
+  const income = calcIncome();
+  const expense = calcExpenses();
+  const balance = income - expense;
+
+  document.getElementById("income").innerText = "$" + income.toFixed(2);
+  document.getElementById("expenses").innerText = "$" + expense.toFixed(2);
+
+  const balEl = document.getElementById("balance");
+  balEl.innerText = "$" + balance.toFixed(2);
+  balEl.className = balance >= 0 ? "good" : "bad";
+
+  renderList();
+}
+
+function addExpense() {
+  const name = document.getElementById("ename").value;
+  const amt = parseFloat(document.getElementById("eamt").value);
+
+  if (!name || !amt) return;
+
+  expenses.push({ name, amount: amt });
+
+  document.getElementById("ename").value = "";
+  document.getElementById("eamt").value = "";
+
+  update();
+}
+
+function renderList() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  expenses.forEach((e, i) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <span>${e.name}</span>
+      <span>$${e.amount}</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+["wage", "hours"].forEach(id => {
+  document.getElementById(id).addEventListener("input", update);
+});
+
+update();
+</script>
+
+</body>
+</html>
