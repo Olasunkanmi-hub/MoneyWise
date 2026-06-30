@@ -12,6 +12,6 @@ Built with vanilla JavaScript (no frameworks, no build step), it features:
 - Installable as a Progressive Web App (PWA) for offline access
 - Light and dark mode
 
-**Live demo:** https://olasunkanmi-hub.github.io/moneywise/
+**Live demo:** https://moneywise-tracker.netlify.app
 
 Currently a portfolio project demonstrating frontend engineering, data visualization, and UX design skills.
