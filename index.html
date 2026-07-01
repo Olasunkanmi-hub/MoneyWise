@@ -563,11 +563,6 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
             <div id="backupMsg" style="font-size:12px; color:var(--muted); margin-top:10px;"></div>
           </div>
           <div style="border-top:1px solid var(--border); padding:14px 0 0; margin-top:14px;">
-            <div style="font-size:13.5px; font-weight:600; margin-bottom:4px;">Smarter Assistant (optional)</div>
-            <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Leave this blank to use the built-in on-device assistant. If you set up a backend endpoint (see the deployment notes), paste its URL here and the Assistant will use a real AI model. Your endpoint keeps your API key secret.</div>
-            <input type="text" id="aiEndpointInput" placeholder="/.netlify/functions/assistant" autocomplete="off">
-          </div>
-          <div style="border-top:1px solid var(--border); padding:14px 0 0; margin-top:14px;">
             <div style="font-size:13.5px; font-weight:600; margin-bottom:8px;">Data</div>
             <div class="row">
               <button class="btn btn-ghost" id="loadSampleBtn">✨ Load sample data</button>
@@ -1556,8 +1551,10 @@ function initUserName(){
 /* ---------- SETTINGS ACTIONS: backup / restore / sample / fresh / AI endpoint ---------- */
 function initDataControls(){
   const aiInput = document.getElementById('aiEndpointInput');
-  aiInput.value = state.aiEndpoint || '';
-  aiInput.addEventListener('input', ()=>{ state.aiEndpoint = aiInput.value.trim(); save(); });
+  if(aiInput){
+    aiInput.value = state.aiEndpoint || '';
+    aiInput.addEventListener('input', ()=>{ state.aiEndpoint = aiInput.value.trim(); save(); });
+  }
 
   document.getElementById('backupBtn').addEventListener('click', ()=>{
     downloadJSON(`olapurse-backup-${new Date().toISOString().slice(0,10)}.json`, state);
@@ -1577,7 +1574,6 @@ function initDataControls(){
         populatePeriodSelects(); populateCurrencySelect();
         setIncomeMode(incomeGet(state.currentMonth).incomeMode || 'hourly');
         renderFavChips(); applyTheme(); initUserName();
-        document.getElementById('aiEndpointInput').value = state.aiEndpoint || '';
         document.getElementById('backupMsg').textContent = 'Backup restored.';
         goTo('dashboard');
       }catch(err){ document.getElementById('backupMsg').textContent = "That file didn't look like an OlaPurse backup."; }
