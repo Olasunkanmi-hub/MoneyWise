@@ -1,4 +1,4 @@
-const CACHE_NAME = "moneywise-v1";
+const CACHE_NAME = "olapurse-v1";
 const FILES_TO_CACHE = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", (e) => {
