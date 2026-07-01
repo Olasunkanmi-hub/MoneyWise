@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Purseful — Personal Finance Dashboard</title>
+<title>OlaPurse — Personal Finance Dashboard</title>
 <meta name="theme-color" content="#6366f1"/>
 <meta name="description" content="Track your income, expenses, budgets, and savings goals — simply."/>
 <link rel="manifest" href="manifest.json"/>
@@ -159,7 +159,7 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-icon" id="brandIcon"></div>
-      <span class="brand-name">Purseful</span>
+      <span class="brand-name">OlaPurse</span>
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="nav-divider"></div>
@@ -451,7 +451,7 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
 
     </div>
 
-    <footer>© 2026 Purseful. Built for tracking smarter, saving faster.</footer>
+    <footer>© 2026 OlaPurse. Built for tracking smarter, saving faster.</footer>
   </main>
 </div>
 
@@ -525,13 +525,13 @@ function freshState(){
 }
 function loadState(){
   try{
-    const raw = localStorage.getItem('purseful_state');
+    const raw = localStorage.getItem('olapurse_state');
     if(raw) return Object.assign(freshState(), JSON.parse(raw));
   }catch(e){}
   return freshState();
 }
 let state = loadState();
-function save(){ try{ localStorage.setItem('purseful_state', JSON.stringify(state)); }catch(e){} }
+function save(){ try{ localStorage.setItem('olapurse_state', JSON.stringify(state)); }catch(e){} }
 
 function fmt(n){
   if(n===undefined || n===null || isNaN(n)) n = 0;
@@ -639,9 +639,9 @@ document.querySelectorAll('[data-goto]').forEach(b=> b.onclick = ()=> goTo(b.dat
 document.getElementById('helpBtn').onclick = ()=> goTo('help');
 document.getElementById('logoutBtn').onclick = ()=>{
   if(confirm('This permanently erases all income, expenses, goals, and budget data you have entered on this device, and cannot be undone. Continue?')){
-    localStorage.removeItem('purseful_state');
+    localStorage.removeItem('olapurse_state');
     localStorage.removeItem(CONV_CACHE_KEY);
-    state = emptyState();
+    state = freshState();
     save();
     location.reload();
   }
@@ -844,7 +844,7 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
   const blob = new Blob([csv], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `purseful-${state.currentMonth}.csv`;
+  a.href = url; a.download = `olapurse-${state.currentMonth}.csv`;
   a.click(); URL.revokeObjectURL(url);
 });
 document.getElementById('importFile').addEventListener('change', (e)=>{
@@ -1135,7 +1135,7 @@ function populateCurrencySelect(){
 }
 
 /* ---------- CONVERTER (with provider fallback) ---------- */
-const CONV_CACHE_KEY = 'purseful_rate_cache';
+const CONV_CACHE_KEY = 'olapurse_rate_cache';
 const CONV_CACHE_TTL = 1000*60*60*4;
 function initConverter(){
   const fromSel = document.getElementById('convFrom');
