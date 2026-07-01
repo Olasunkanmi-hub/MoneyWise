@@ -1,6 +1,6 @@
 {
-  "name": "MoneyWise — Personal Finance Dashboard",
-  "short_name": "MoneyWise",
+  "name": "Purseful — Personal Finance Dashboard",
+  "short_name": "Purseful",
   "description": "Track income, expenses, budgets, and savings goals — simply.",
   "start_url": "./index.html",
   "scope": "./",
