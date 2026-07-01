@@ -1189,7 +1189,17 @@ document.getElementById('installBtn').addEventListener('click', async ()=>{
   document.getElementById('installBanner').classList.remove('show');
 });
 window.addEventListener('appinstalled', ()=>{ document.getElementById('installBanner').classList.remove('show'); });
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+if('serviceWorker' in navigator){
+  const hadController = !!navigator.serviceWorker.controller;
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(swRefreshing) return;
+    swRefreshing = true;
+    // Only auto-reload when an UPDATED worker replaces an existing one — never on first install.
+    if(hadController) location.reload();
+  });
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 
 /* ---------- USER NAME ---------- */
 function updateWelcomeLine(){
