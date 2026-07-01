@@ -7,7 +7,7 @@
 
    This is what stops the "old version until I hard-refresh" problem.
    Bump CACHE_VERSION only if you want to force-clear cached assets. */
-const CACHE_VERSION = 'olapurse-v2';
+const CACHE_VERSION = 'olapurse-v4';
 const PRECACHE = ['./', './index.html', './manifest.json', './icon-192.png'];
 
 self.addEventListener('install', (event) => {
