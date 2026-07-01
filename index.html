@@ -224,7 +224,7 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
         <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
         <div>
           <h1 id="pageTitle">Dashboard</h1>
-          <p id="welcomeLine">Welcome back — here's your financial overview.</p>
+          <p id="welcomeLine">Welcome, Guest — here's your financial overview.</p>
         </div>
       </div>
       <div class="topbar-actions">
@@ -1544,7 +1544,7 @@ if('serviceWorker' in navigator){
 function updateWelcomeLine(){
   const line = document.getElementById('welcomeLine');
   const name = (state.userName||'').trim();
-  line.textContent = name ? `Welcome back, ${name} — here's your financial overview.` : `Welcome — here's your financial overview.`;
+  line.textContent = name ? `Welcome back, ${name} — here's your financial overview.` : `Welcome, Guest — here's your financial overview.`;
 }
 function initUserName(){
   const input = document.getElementById('userNameInput');
