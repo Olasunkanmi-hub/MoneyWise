@@ -1,6 +1,6 @@
 {
-  "name": "Purseful — Personal Finance Dashboard",
-  "short_name": "Purseful",
+  "name": "olaPurse — Personal Finance Dashboard",
+  "short_name": "olaPurse",
   "description": "Track income, expenses, budgets, and savings goals — simply.",
   "start_url": "./index.html",
   "scope": "./",
