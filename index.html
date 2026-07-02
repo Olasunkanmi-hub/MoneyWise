@@ -287,19 +287,26 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
         <div class="grid grid-2" style="margin-bottom:16px;">
           <div class="card">
             <div class="card-title"><span class="ic">📈</span> Income</div>
+            <div class="field" style="margin-bottom:8px;"><label>Source name</label><input type="text" id="srcName" placeholder="e.g. Main job, Freelance" autocomplete="off"></div>
             <div class="income-toggle">
-              <button id="modeHourlyBtn" class="active">Hourly Wage</button>
-              <button id="modeMonthlyBtn">Monthly Income</button>
+              <button id="srcTypeHourlyBtn" class="active" type="button">Hourly</button>
+              <button id="srcTypeFixedBtn" type="button">Fixed amount</button>
             </div>
-            <div id="hourlyFields">
-              <div class="field"><label id="wageLabel">Hourly Wage</label><input type="number" id="wageInput" value="0"></div>
-              <div class="field"><label>Hours Worked / Week</label><input type="number" id="hoursInput" value="0"></div>
+            <div id="srcHourlyFields">
+              <div class="field"><label id="srcWageLabel">Hourly Wage</label><input type="number" id="srcWage" placeholder="0" min="0" step="0.01" inputmode="decimal"></div>
+              <div class="row">
+                <div class="field" style="margin-bottom:0;"><label>Hours / Day</label><input type="number" id="srcHpd" placeholder="0" min="0" step="0.5" inputmode="decimal"></div>
+                <div class="field" style="margin-bottom:0;"><label>Days / Week</label><input type="number" id="srcDpw" placeholder="0" min="0" max="7" step="1" inputmode="numeric"></div>
+              </div>
+              <p style="font-size:11px; color:var(--muted); margin-top:6px;" id="srcWeeklyNote">Enter your hours to see the weekly total.</p>
             </div>
-            <div id="monthlyFields" style="display:none;">
-              <div class="field"><label id="monthlyLabel">Monthly Income</label><input type="number" id="monthlyIncomeInput" value="0"></div>
-              <div class="field"><label>Hours Worked / Week (for proration)</label><input type="number" id="hoursInputAlt" value="0"></div>
-              <p style="font-size:11px; color:var(--muted); margin-top:-6px;">We'll back-calculate your implied hourly wage from this.</p>
+            <div id="srcFixedFields" style="display:none;">
+              <div class="field"><label id="srcMonthlyLabel">Monthly amount</label><input type="number" id="srcMonthly" placeholder="0" min="0" step="0.01" inputmode="decimal"></div>
             </div>
+            <button type="button" class="btn" id="addIncomeBtn" style="width:100%; margin-bottom:6px;">+ Add income</button>
+            <div id="srcError" style="display:none; font-size:11.5px; color:#fb7185; margin-bottom:8px;"></div>
+            <label id="incomeHeading" style="display:none; font-weight:700; font-size:11px; letter-spacing:.04em; color:var(--muted);">INCOME SOURCES</label>
+            <div id="incomeList" style="margin-top:8px; margin-bottom:12px;"></div>
             <label class="checkbox-row"><input type="checkbox" id="incomeRecurring" checked> Same income each month (carries into future months)</label>
             <div class="mini-grid">
               <div class="mini-stat"><div class="l">Weekly</div><div class="v" id="weeklyVal">$0</div></div>
@@ -641,6 +648,33 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
   </div>
 </div>
 
+<!-- EDIT INCOME SOURCE MODAL -->
+<div class="modal-overlay" id="incomeModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Edit income source">
+    <h3>Edit income source</h3>
+    <div class="field"><label>Name</label><input type="text" id="ediName" autocomplete="off"></div>
+    <div class="income-toggle">
+      <button id="ediHourlyBtn" class="active" type="button">Hourly</button>
+      <button id="ediFixedBtn" type="button">Fixed amount</button>
+    </div>
+    <div id="ediHourlyFields">
+      <div class="field"><label>Hourly wage</label><input type="number" id="ediWage" min="0" step="0.01" inputmode="decimal"></div>
+      <div class="row">
+        <div class="field" style="margin-bottom:0;"><label>Hours / Day</label><input type="number" id="ediHpd" min="0" step="0.5" inputmode="decimal"></div>
+        <div class="field" style="margin-bottom:0;"><label>Days / Week</label><input type="number" id="ediDpw" min="0" max="7" step="1" inputmode="numeric"></div>
+      </div>
+    </div>
+    <div id="ediFixedFields" style="display:none;">
+      <div class="field"><label>Monthly amount</label><input type="number" id="ediMonthly" min="0" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div id="ediError" style="display:none; font-size:11.5px; color:#fb7185; margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn" id="ediSaveBtn" style="flex:1;">Save</button>
+      <button class="btn btn-ghost" id="ediCancelBtn" style="flex:0 0 auto;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- CLEAR DATA MODAL -->
 <div class="modal-overlay" id="clearModal">
   <div class="modal" role="dialog" aria-modal="true" aria-label="Clear data">
@@ -662,14 +696,50 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
 </div>
 
 <!-- LOCK / LOGOUT SCREEN -->
+<!-- LOGOUT CHOICE MODAL -->
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Log out">
+    <div id="logoutChoice">
+      <h3>Log out</h3>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.5;">What would you like to do with your data on this device?</p>
+      <div style="display:flex; flex-direction:column; gap:9px;">
+        <button class="btn" id="logoutKeepBtn" style="width:100%;">Keep my data &amp; log out</button>
+        <button class="btn btn-danger" id="logoutEraseBtn" style="width:100%;">Erase everything &amp; log out</button>
+        <button class="btn btn-ghost" id="logoutCancelBtn" style="width:100%;">Cancel</button>
+      </div>
+      <p style="font-size:11.5px; color:var(--muted); margin-top:12px; line-height:1.45;">Keeping your data means it'll be here when you return. Erasing permanently removes all income, expenses, goals, budgets and net worth on this device.</p>
+    </div>
+    <div id="logoutConfirmErase" style="display:none;">
+      <h3 style="color:#e11d48;">Erase everything?</h3>
+      <p style="font-size:13px; color:var(--muted); margin:8px 0 18px; line-height:1.5;">This permanently deletes all your income, expenses, goals, budgets and net worth on this device. This <b>cannot be undone</b>. Consider a backup first (Settings → Backup).</p>
+      <div style="display:flex; flex-direction:column; gap:9px;">
+        <button class="btn btn-danger" id="logoutEraseConfirmBtn" style="width:100%;">Yes, erase permanently</button>
+        <button class="btn btn-ghost" id="logoutEraseBackBtn" style="width:100%;">Go back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="lockScreen" style="display:none; position:fixed; inset:0; z-index:300; background:linear-gradient(135deg,#6366f1,#3b82f6); color:#fff; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
   <div style="width:64px; height:64px; margin-bottom:18px; border-radius:16px; overflow:hidden;" id="lockIcon"></div>
   <h2 style="font-size:22px; font-weight:800; margin-bottom:8px;">You're logged out</h2>
-  <p style="font-size:14px; opacity:.92; max-width:330px; margin-bottom:22px; line-height:1.5;">Your data is saved safely on this device. Open OlaPurse again whenever you're ready.</p>
+  <p style="font-size:14px; opacity:.92; max-width:330px; margin-bottom:22px; line-height:1.5;" id="lockMsg">Your data is saved safely on this device. Open OlaPurse again whenever you're ready.</p>
   <button class="btn" id="lockResumeBtn" style="background:#fff; color:#4338ca;">Open OlaPurse</button>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- REUSABLE CONFIRM MODAL (stacks on top of everything) -->
+<div class="modal-overlay" id="confirmModal" style="z-index:400;">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Please confirm">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmText" style="font-size:13px; color:var(--muted); margin:8px 0 18px; line-height:1.5;"></p>
+    <div style="display:flex; flex-direction:column; gap:9px;">
+      <button class="btn" id="confirmYesBtn" style="width:100%;">Yes</button>
+      <button class="btn btn-ghost" id="confirmNoBtn" style="width:100%;">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ---------- CONFIG ---------- */
@@ -729,7 +799,7 @@ function sampleState(){
   const m = defaultMonthKey();
   const s = emptyState();
   s.onboarded = true;
-  s.incomeByMonth = { [m]: {incomeMode:'hourly', wage:25, hours:40, monthlyIncome:0, recurring:true} };
+  s.incomeByMonth = { [m]: { recurring:true, sources:[ {id:1, name:'Part-time job', type:'hourly', wage:25, hoursPerDay:8, daysPerWeek:5, monthlyIncome:0} ] } };
   s.expenses = [
     {id:1,name:'Rent',amount:900,cat:'Rent',date:'recent',note:'',recurring:true, month:m},
     {id:2,name:'Groceries',amount:250,cat:'Food',date:'recent',note:'',recurring:false, month:m},
@@ -773,6 +843,23 @@ function migrateState(merged){
     };
     merged.onboarded = true;
   }
+  // Convert any old single-income month entry into the new named-sources list.
+  let maxId = parseInt(merged.nextId)||1;
+  Object.keys(merged.incomeByMonth).forEach(k=>{
+    const e = merged.incomeByMonth[k];
+    if(e && !Array.isArray(e.sources)){
+      const type = e.incomeMode === 'monthly' ? 'fixed' : 'hourly';
+      let hpd = e.hoursPerDay, dpw = e.daysPerWeek;
+      if(type==='hourly' && (hpd==null||hpd===''||dpw==null||dpw==='')){
+        const wk = parseFloat(e.hours)||0; dpw = wk>0?5:0; hpd = dpw>0 ? +(wk/dpw).toFixed(2) : 0;
+      }
+      const wage = parseFloat(e.wage)||0, monthly = parseFloat(e.monthlyIncome)||0;
+      const has = type==='hourly' ? (wage>0 && (parseFloat(hpd)||0)*(parseFloat(dpw)||0)>0) : (monthly>0);
+      const src = { id: maxId++, name: type==='fixed'?'Monthly income':'Wage', type, wage, hoursPerDay: type==='hourly'?hpd:'', daysPerWeek: type==='hourly'?dpw:'', monthlyIncome: monthly };
+      merged.incomeByMonth[k] = { recurring: e.recurring!==false, sources: has ? [src] : [] };
+    }
+  });
+  if(maxId > (parseInt(merged.nextId)||1)) merged.nextId = maxId;
   return merged;
 }
 function loadState(){
@@ -910,15 +997,26 @@ function openClearModal(){
   document.getElementById('clearModal').classList.add('show');
 }
 function closeClearModal(){ document.getElementById('clearModal').classList.remove('show'); }
+/* Reusable in-app confirmation — replaces native confirm(), which mobile/PWA browsers can silently suppress */
+let _confirmCb = null;
+function askConfirm(opts){
+  document.getElementById('confirmTitle').textContent = opts.title || 'Are you sure?';
+  document.getElementById('confirmText').textContent = opts.message || '';
+  const yes = document.getElementById('confirmYesBtn');
+  yes.textContent = opts.yesText || 'Yes';
+  yes.className = 'btn' + (opts.danger ? ' btn-danger' : '');
+  _confirmCb = { onYes: opts.onYes || null, onNo: opts.onNo || null };
+  document.getElementById('confirmModal').classList.add('show');
+}
+function closeConfirm(){ document.getElementById('confirmModal').classList.remove('show'); }
+document.getElementById('confirmYesBtn').addEventListener('click', ()=>{ const cb=_confirmCb; _confirmCb=null; closeConfirm(); if(cb && cb.onYes) cb.onYes(); });
+document.getElementById('confirmNoBtn').addEventListener('click', ()=>{ const cb=_confirmCb; _confirmCb=null; closeConfirm(); if(cb && cb.onNo) cb.onNo(); });
+document.getElementById('confirmModal').addEventListener('click', e=>{ if(e.target.id==='confirmModal'){ const cb=_confirmCb; _confirmCb=null; closeConfirm(); if(cb && cb.onNo) cb.onNo(); } });
+
 function doClear(){
   if(document.getElementById('clrEverything').checked){
-    if(!confirm('Erase EVERYTHING on this profile — all months, income, goals, budgets, net worth, and the assistant chat? This cannot be undone.')) return;
-    const keep = { dark: state.dark, currency: state.currency, userName: state.userName };
-    state = Object.assign(emptyState(), keep);
-    state.currentMonth = defaultMonthKey();
-    clearChat(); save();
-    populatePeriodSelects(); populateCurrencySelect(); setIncomeMode('hourly'); renderFavChips(); applyTheme();
-    closeClearModal(); goTo('dashboard'); toast('Everything cleared'); return;
+    askConfirm({ title:'Erase everything?', message:'This erases all months, income, expenses, goals, budgets, net worth and the assistant chat on this profile. This cannot be undone.', yesText:'Yes, erase everything', danger:true, onYes: clearEverything });
+    return;
   }
   const opts = {
     expenses: document.getElementById('clrExpenses').checked,
@@ -929,32 +1027,62 @@ function doClear(){
     chat:     document.getElementById('clrChat').checked,
   };
   if(!Object.values(opts).some(Boolean)){ toast('Nothing selected'); return; }
-  if(!confirm('Clear the selected items? This cannot be undone.')) return;
+  askConfirm({ title:'Clear selected items?', message:'The items you ticked will be removed. This cannot be undone.', yesText:'Clear', danger:true, onYes: ()=> clearSelected(opts) });
+}
+function clearEverything(){
+  const keep = { dark: state.dark, currency: state.currency, userName: state.userName };
+  state = Object.assign(emptyState(), keep);
+  state.currentMonth = defaultMonthKey();
+  clearChat(); save();
+  populatePeriodSelects(); populateCurrencySelect(); setSrcType('hourly'); renderFavChips(); applyTheme();
+  closeClearModal(); goTo('dashboard'); toast('Everything cleared');
+}
+function clearSelected(opts){
   if(opts.expenses) state.expenses = state.expenses.filter(e=> e.month !== state.currentMonth);
   if(opts.income && state.incomeByMonth) delete state.incomeByMonth[state.currentMonth];
   if(opts.goals) state.goals = [];
   if(opts.budgets) state.budgets = {};
   if(opts.accounts) state.accounts = [];
   if(opts.chat) clearChat();
-  save();
-  setIncomeMode(incomeGet(state.currentMonth).incomeMode || 'hourly');
-  renderAll(); closeClearModal(); toast('Cleared');
+  save(); setSrcType('hourly'); renderAll(); closeClearModal(); toast('Cleared');
 }
 document.getElementById('clearDataBtn').onclick = openClearModal;
 
 /* ---- Log out (lock screen) ---- */
+function showLogoutChoice(){ document.getElementById('logoutChoice').style.display=''; document.getElementById('logoutConfirmErase').style.display='none'; }
 function logout(){
-  if(!confirm('Log out of OlaPurse? Your data stays saved on this device.')) return;
-  try{ if(window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
+  showLogoutChoice();
+  document.getElementById('logoutModal').classList.add('show');
+}
+function closeLogoutModal(){ document.getElementById('logoutModal').classList.remove('show'); showLogoutChoice(); }
+function doLogout(erase){
+  try{ if(window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
+  if(erase){
+    const keep = { dark: state.dark, currency: state.currency };
+    state = Object.assign(emptyState(), keep);
+    state.currentMonth = defaultMonthKey();
+    clearChat(); save();
+    populatePeriodSelects(); populateCurrencySelect(); setSrcType('hourly'); renderFavChips(); applyTheme(); goTo('dashboard');
+  }
+  const msg = document.getElementById('lockMsg');
+  if(msg) msg.textContent = erase
+    ? 'Your data has been erased from this device. You can start fresh whenever you like.'
+    : 'Your data is saved safely on this device. Open OlaPurse again whenever you\u2019re ready.';
+  closeLogoutModal();
   document.getElementById('lockScreen').style.display = 'flex';
-  // If OlaPurse was installed and opened as its own app window, try to close it; browsers block this in a normal tab.
   const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone;
   if(standalone){ try{ window.close(); }catch(e){} }
 }
 function resumeApp(){ document.getElementById('lockScreen').style.display = 'none'; }
 document.getElementById('logoutBtn').onclick = logout;
+document.getElementById('logoutKeepBtn').addEventListener('click', ()=> doLogout(false));
+document.getElementById('logoutEraseBtn').addEventListener('click', ()=>{ document.getElementById('logoutChoice').style.display='none'; document.getElementById('logoutConfirmErase').style.display=''; });
+document.getElementById('logoutEraseBackBtn').addEventListener('click', showLogoutChoice);
+document.getElementById('logoutEraseConfirmBtn').addEventListener('click', ()=> doLogout(true));
+document.getElementById('logoutCancelBtn').addEventListener('click', closeLogoutModal);
+document.getElementById('logoutModal').addEventListener('click', e=>{ if(e.target.id==='logoutModal') closeLogoutModal(); });
 document.getElementById('lockResumeBtn').onclick = resumeApp;
 document.getElementById('menuBtn').onclick = ()=>{ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
 document.getElementById('overlay').onclick = ()=>{ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); };
@@ -972,59 +1100,147 @@ document.getElementById('settingsToggle').onclick = ()=>{ state.dark = !state.da
 document.getElementById('settingsToggle').addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); state.dark = !state.dark; save(); applyTheme(); } });
 
 /* ---------- INCOME (per-month, hourly <-> monthly two-way sync, optional recurring) ---------- */
-function incomeGet(key){ return (state.incomeByMonth && state.incomeByMonth[key]) || {incomeMode:'hourly', wage:0, hours:0, monthlyIncome:0, recurring:true}; }
-function incomeSet(key){ if(!state.incomeByMonth) state.incomeByMonth={}; if(!state.incomeByMonth[key]) state.incomeByMonth[key]={incomeMode:'hourly', wage:0, hours:0, monthlyIncome:0, recurring:true}; return state.incomeByMonth[key]; }
-function computeIncome(e){
-  if(e.incomeMode === 'monthly'){ const monthly = parseFloat(e.monthlyIncome)||0; const weekly = monthly/4.33; return { weekly, monthly, yearly: weekly*52 }; }
-  const weekly = (parseFloat(e.wage)||0) * (parseFloat(e.hours)||0);
-  return { weekly, monthly: weekly*4.33, yearly: weekly*52 };
+function incomeGet(key){ const e = state.incomeByMonth && state.incomeByMonth[key]; if(e && Array.isArray(e.sources)) return e; return { recurring:true, sources:[] }; }
+function incomeSet(key){
+  if(!state.incomeByMonth) state.incomeByMonth = {};
+  const e = state.incomeByMonth[key];
+  if(!e || !Array.isArray(e.sources)){
+    state.incomeByMonth[key] = { recurring: (e && e.recurring!==undefined) ? e.recurring : true, sources: (e && Array.isArray(e.sources)) ? e.sources : [] };
+  }
+  return state.incomeByMonth[key];
 }
-function getIncome(){ return computeIncome(incomeGet(state.currentMonth)); }
-function getIncomeForMonth(key){ return computeIncome(incomeGet(key)); }
+function sourceWeeklyHours(s){ return +(((parseFloat(s.hoursPerDay)||0)*(parseFloat(s.daysPerWeek)||0)).toFixed(2)); }
+function sourceMonthly(s){
+  if(s.type==='hourly'){ const weekly = (parseFloat(s.wage)||0) * sourceWeeklyHours(s); return weekly*4.33; }
+  return parseFloat(s.monthlyIncome)||0;
+}
+function computeIncomeEntry(e){
+  const monthly = (e.sources||[]).reduce((a,s)=> a + sourceMonthly(s), 0);
+  const weekly = monthly/4.33;
+  return { weekly, monthly, yearly: weekly*52 };
+}
+function getIncome(){ return computeIncomeEntry(incomeGet(state.currentMonth)); }
+function getIncomeForMonth(key){ return computeIncomeEntry(incomeGet(key)); }
 /* Carry income into a new month if the previous month's income is marked recurring. */
 function ensureRecurringIncomeForMonth(key){
   if(state.incomeByMonth && state.incomeByMonth[key]) return;
   const prev = state.incomeByMonth ? state.incomeByMonth[prevMonthKey(key)] : null;
-  if(prev && prev.recurring){ incomeSet(key); Object.assign(state.incomeByMonth[key], prev); save(); }
+  if(prev && prev.recurring && Array.isArray(prev.sources)){ state.incomeByMonth[key] = JSON.parse(JSON.stringify(prev)); save(); }
 }
-function setIncomeMode(mode){
+
+/* ----- Add-income form ----- */
+let srcType = 'hourly';
+function setSrcType(t){
+  srcType = t;
+  document.getElementById('srcTypeHourlyBtn').classList.toggle('active', t==='hourly');
+  document.getElementById('srcTypeFixedBtn').classList.toggle('active', t==='fixed');
+  document.getElementById('srcHourlyFields').style.display = t==='hourly' ? '' : 'none';
+  document.getElementById('srcFixedFields').style.display = t==='fixed' ? '' : 'none';
+}
+document.getElementById('srcTypeHourlyBtn').onclick = ()=> setSrcType('hourly');
+document.getElementById('srcTypeFixedBtn').onclick = ()=> setSrcType('fixed');
+function updateSrcWeeklyNote(){
+  const hpd = parseFloat(document.getElementById('srcHpd').value)||0, dpw = parseFloat(document.getElementById('srcDpw').value)||0;
+  const wk = +(hpd*dpw).toFixed(2);
+  const n = document.getElementById('srcWeeklyNote');
+  if(n) n.textContent = wk>0 ? `That works out to ${wk} hour${wk===1?'':'s'}/week.` : 'Enter your hours to see the weekly total.';
+}
+document.getElementById('srcHpd').addEventListener('input', updateSrcWeeklyNote);
+document.getElementById('srcDpw').addEventListener('input', updateSrcWeeklyNote);
+function addIncomeSource(){
   const e = incomeSet(state.currentMonth);
-  e.incomeMode = mode;
-  document.getElementById('modeHourlyBtn').classList.toggle('active', mode==='hourly');
-  document.getElementById('modeMonthlyBtn').classList.toggle('active', mode==='monthly');
-  document.getElementById('hourlyFields').style.display = mode==='hourly' ? '' : 'none';
-  document.getElementById('monthlyFields').style.display = mode==='monthly' ? '' : 'none';
+  const err = document.getElementById('srcError'); err.style.display='none';
+  const name = (document.getElementById('srcName').value||'').trim();
+  const label = name || (srcType==='hourly' ? 'Wage' : 'Income');
+  if(srcType==='hourly'){
+    const wage = parseFloat(document.getElementById('srcWage').value)||0;
+    const hpd = document.getElementById('srcHpd').value, dpw = document.getElementById('srcDpw').value;
+    if(wage<=0 || (parseFloat(hpd)||0)*(parseFloat(dpw)||0)<=0){ err.textContent='Enter an hourly wage and your hours (per day × days per week).'; err.style.display='block'; return; }
+    e.sources.push({ id: state.nextId++, name: label, type:'hourly', wage, hoursPerDay: hpd, daysPerWeek: dpw, monthlyIncome:0 });
+  } else {
+    const monthly = parseFloat(document.getElementById('srcMonthly').value)||0;
+    if(monthly<=0){ err.textContent='Enter a monthly amount greater than 0.'; err.style.display='block'; return; }
+    e.sources.push({ id: state.nextId++, name: label, type:'fixed', wage:0, hoursPerDay:'', daysPerWeek:'', monthlyIncome: monthly });
+  }
+  document.getElementById('srcName').value=''; document.getElementById('srcWage').value='';
+  document.getElementById('srcHpd').value=''; document.getElementById('srcDpw').value=''; document.getElementById('srcMonthly').value='';
+  updateSrcWeeklyNote();
   save(); renderAll();
 }
-document.getElementById('modeHourlyBtn').onclick = ()=> setIncomeMode('hourly');
-document.getElementById('modeMonthlyBtn').onclick = ()=> setIncomeMode('monthly');
-function syncWageInputs(){
+document.getElementById('addIncomeBtn').addEventListener('click', addIncomeSource);
+function deleteIncomeSource(id){ const e = incomeGet(state.currentMonth); e.sources = (e.sources||[]).filter(s=> s.id!==id); save(); renderAll(); }
+
+/* ----- Edit-income modal ----- */
+let editingSrcId = null, ediType = 'hourly';
+function setEdiType(t){
+  ediType = t;
+  document.getElementById('ediHourlyBtn').classList.toggle('active', t==='hourly');
+  document.getElementById('ediFixedBtn').classList.toggle('active', t==='fixed');
+  document.getElementById('ediHourlyFields').style.display = t==='hourly' ? '' : 'none';
+  document.getElementById('ediFixedFields').style.display = t==='fixed' ? '' : 'none';
+}
+function openEditIncome(id){
+  const e = incomeGet(state.currentMonth); const s = (e.sources||[]).find(x=> x.id===id); if(!s) return;
+  editingSrcId = id;
+  document.getElementById('ediName').value = s.name||'';
+  setEdiType(s.type||'hourly');
+  document.getElementById('ediWage').value = s.wage||'';
+  document.getElementById('ediHpd').value = s.hoursPerDay||'';
+  document.getElementById('ediDpw').value = s.daysPerWeek||'';
+  document.getElementById('ediMonthly').value = s.monthlyIncome||'';
+  document.getElementById('ediError').style.display='none';
+  document.getElementById('incomeModal').classList.add('show');
+}
+function closeEditIncome(){ editingSrcId=null; document.getElementById('incomeModal').classList.remove('show'); }
+function saveEditIncome(){
+  const e = incomeGet(state.currentMonth); const s = (e.sources||[]).find(x=> x.id===editingSrcId); if(!s) return closeEditIncome();
+  const err = document.getElementById('ediError'); err.style.display='none';
+  const name = (document.getElementById('ediName').value||'').trim();
+  if(ediType==='hourly'){
+    const wage = parseFloat(document.getElementById('ediWage').value)||0;
+    const hpd = document.getElementById('ediHpd').value, dpw = document.getElementById('ediDpw').value;
+    if(wage<=0 || (parseFloat(hpd)||0)*(parseFloat(dpw)||0)<=0){ err.textContent='Enter a wage and hours.'; err.style.display='block'; return; }
+    s.type='hourly'; s.wage=wage; s.hoursPerDay=hpd; s.daysPerWeek=dpw; s.monthlyIncome=0;
+  } else {
+    const monthly = parseFloat(document.getElementById('ediMonthly').value)||0;
+    if(monthly<=0){ err.textContent='Enter a monthly amount.'; err.style.display='block'; return; }
+    s.type='fixed'; s.monthlyIncome=monthly; s.wage=0; s.hoursPerDay=''; s.daysPerWeek='';
+  }
+  s.name = name || s.name;
+  save(); renderAll(); closeEditIncome();
+}
+document.getElementById('ediHourlyBtn').onclick = ()=> setEdiType('hourly');
+document.getElementById('ediFixedBtn').onclick = ()=> setEdiType('fixed');
+document.getElementById('ediSaveBtn').addEventListener('click', saveEditIncome);
+document.getElementById('ediCancelBtn').addEventListener('click', closeEditIncome);
+document.getElementById('incomeModal').addEventListener('click', e=>{ if(e.target.id==='incomeModal') closeEditIncome(); });
+
+/* ----- Render income (list + totals) ----- */
+function renderIncome(){
   const e = incomeGet(state.currentMonth);
   const ae = document.activeElement;
-  const setVal = (id, val)=>{ const el = document.getElementById(id); if(el && el !== ae) el.value = val; };
-  setVal('wageInput', e.wage);
-  setVal('hoursInput', e.hours);
-  setVal('hoursInputAlt', e.hours);
-  setVal('monthlyIncomeInput', Math.round((parseFloat(e.monthlyIncome)||0)*100)/100);
-  const rec = document.getElementById('incomeRecurring'); if(rec && rec !== ae) rec.checked = !!e.recurring;
   const cur = currencyCode();
-  document.getElementById('wageLabel').textContent = `Hourly Wage (${cur})`;
-  document.getElementById('monthlyLabel').textContent = `Monthly Income (${cur})`;
+  const wl = document.getElementById('srcWageLabel'); if(wl) wl.textContent = `Hourly Wage (${cur})`;
+  const ml = document.getElementById('srcMonthlyLabel'); if(ml) ml.textContent = `Monthly amount (${cur})`;
+  const rec = document.getElementById('incomeRecurring'); if(rec && rec !== ae) rec.checked = e.recurring!==false;
+  const inc = computeIncomeEntry(e);
+  document.getElementById('weeklyVal').textContent = fmt(inc.weekly);
+  document.getElementById('monthlyVal').textContent = fmt(inc.monthly);
+  document.getElementById('yearlyVal').textContent = fmt(inc.yearly);
+  const box = document.getElementById('incomeList'); if(!box) return;
+  const hasSrc = !!(e.sources && e.sources.length);
+  const heading = document.getElementById('incomeHeading'); if(heading) heading.style.display = hasSrc ? '' : 'none';
+  box.innerHTML = hasSrc ? e.sources.map(s=>{
+    const desc = s.type==='hourly' ? `${fmt(s.wage)}/hr · ${sourceWeeklyHours(s)} h/wk` : 'Fixed monthly';
+    return `<div class="exp-row">
+      <div class="exp-left"><div class="exp-icon" style="background:#d1fae5;">${s.type==='hourly'?'⏱':'💵'}</div>
+        <div><div class="exp-name">${escapeHtml(s.name)}</div><div class="exp-meta">${desc}</div></div></div>
+      <div class="exp-right"><span class="exp-amt">${fmt(sourceMonthly(s))}/mo</span>
+        <button class="edit-btn" onclick="openEditIncome(${s.id})" aria-label="Edit income" title="Edit">✎</button>
+        <button class="del-btn" onclick="deleteIncomeSource(${s.id})" aria-label="Delete income" title="Delete">🗑</button></div>
+    </div>`;
+  }).join('') : '<div class="empty">No income added yet. Add your wage or a fixed amount above. 💰</div>';
 }
-document.getElementById('wageInput').addEventListener('input', ev=>{ incomeSet(state.currentMonth).wage = ev.target.value; save(); renderAll(); });
-document.getElementById('hoursInput').addEventListener('input', ev=>{ incomeSet(state.currentMonth).hours = ev.target.value; document.getElementById('hoursInputAlt').value = ev.target.value; save(); renderAll(); });
-document.getElementById('hoursInputAlt').addEventListener('input', ev=>{
-  const e = incomeSet(state.currentMonth);
-  e.hours = ev.target.value; document.getElementById('hoursInput').value = ev.target.value;
-  const monthly = parseFloat(e.monthlyIncome)||0; const weekly = monthly/4.33; const hrs = parseFloat(e.hours)||0;
-  e.wage = hrs>0 ? +(weekly/hrs).toFixed(2) : 0; save(); renderAll();
-});
-document.getElementById('monthlyIncomeInput').addEventListener('input', ev=>{
-  const e = incomeSet(state.currentMonth);
-  e.monthlyIncome = ev.target.value;
-  const monthly = parseFloat(e.monthlyIncome)||0; const weekly = monthly/4.33; const hrs = parseFloat(e.hours)||0;
-  e.wage = hrs>0 ? +(weekly/hrs).toFixed(2) : 0; save(); renderAll();
-});
 document.getElementById('incomeRecurring').addEventListener('change', ev=>{ incomeSet(state.currentMonth).recurring = ev.target.checked; save(); });
 
 /* ---------- EXPENSES ---------- */
@@ -1305,7 +1521,7 @@ function renderAll(){
   const periodLabel = currentMonthLabel();
   document.getElementById('statIncomeSub').textContent = periodLabel;
   document.getElementById('statExpensesSub').textContent = periodLabel;
-  syncWageInputs();
+  renderIncome();
   document.getElementById('weeklyVal').textContent = fmt(income.weekly);
   document.getElementById('monthlyVal').textContent = fmt(income.monthly);
   document.getElementById('yearlyVal').textContent = fmt(income.yearly);
@@ -1385,22 +1601,27 @@ function renderOnboarding(){
 }
 function dismissOnboarding(){ state.onboarded = true; save(); renderOnboarding(); }
 function loadSampleData(){
-  if(hasAnyData() && !confirm('Load sample data? This adds example income, expenses, and goals so you can explore. You can erase it later with "Start fresh".')) return;
+  if(hasAnyData()){ askConfirm({ title:'Load sample data?', message:'This adds example income, expenses and goals so you can explore. You can erase it later with "Start fresh".', yesText:'Load sample data', onYes: performLoadSample }); return; }
+  performLoadSample();
+}
+function performLoadSample(){
   state = Object.assign(sampleState(), { dark: state.dark, currency: state.currency, userName: state.userName, aiEndpoint: state.aiEndpoint });
   state.currentMonth = defaultMonthKey();
   save();
   populatePeriodSelects(); populateCurrencySelect();
-  setIncomeMode(incomeGet(state.currentMonth).incomeMode || 'hourly');
+  setSrcType('hourly');
   renderFavChips(); applyTheme(); goTo('dashboard');
 }
 function startFresh(){
-  if(!confirm('Erase ALL your data on this device — income, every expense, goal, budget, and all months? This cannot be undone.')) return;
+  askConfirm({ title:'Start fresh?', message:'This erases all your data on this device — income, every expense, goal, budget and all months. This cannot be undone.', yesText:'Yes, erase and start fresh', danger:true, onYes: performStartFresh });
+}
+function performStartFresh(){
   const keep = { dark: state.dark, currency: state.currency };
   state = Object.assign(emptyState(), keep);
   state.currentMonth = defaultMonthKey();
   save();
   populatePeriodSelects(); populateCurrencySelect();
-  setIncomeMode('hourly'); renderFavChips(); applyTheme(); goTo('dashboard');
+  setSrcType('hourly'); renderFavChips(); applyTheme(); goTo('dashboard');
 }
 function renderForecast(monthExpenses, income, totalExp){
   const box = document.getElementById('forecastBox');
@@ -1693,15 +1914,16 @@ function initDataControls(){
       try{
         const data = JSON.parse(e.target.result);
         if(typeof data !== 'object' || !('expenses' in data) && !('incomeByMonth' in data) && !('goals' in data)) throw new Error('bad');
-        if(!confirm('Restore this backup? It will REPLACE all data currently on this device.')) { ev.target.value=''; return; }
-        state = Object.assign(emptyState(), data);
-        if(!state.incomeByMonth || typeof state.incomeByMonth!=='object') state.incomeByMonth = {};
-        save();
-        populatePeriodSelects(); populateCurrencySelect();
-        setIncomeMode(incomeGet(state.currentMonth).incomeMode || 'hourly');
-        renderFavChips(); applyTheme(); initUserName();
-        document.getElementById('backupMsg').textContent = 'Backup restored.';
-        goTo('dashboard');
+        askConfirm({ title:'Restore this backup?', message:'This will REPLACE all data currently on this device with the backup file. This cannot be undone.', yesText:'Restore backup', danger:true, onYes: ()=>{
+          state = Object.assign(emptyState(), data);
+          if(!state.incomeByMonth || typeof state.incomeByMonth!=='object') state.incomeByMonth = {};
+          save();
+          populatePeriodSelects(); populateCurrencySelect();
+          setSrcType('hourly');
+          renderFavChips(); applyTheme(); initUserName();
+          document.getElementById('backupMsg').textContent = 'Backup restored.';
+          goTo('dashboard');
+        }});
       }catch(err){ document.getElementById('backupMsg').textContent = "That file didn't look like an OlaPurse backup."; }
       ev.target.value = '';
     };
@@ -1765,7 +1987,7 @@ function reloadForProfile(){
   state = loadState();
   populatePeriodSelects(); populateCurrencySelect();
   ensureRecurringForMonth(state.currentMonth); ensureRecurringIncomeForMonth(state.currentMonth);
-  setIncomeMode(incomeGet(state.currentMonth).incomeMode || 'hourly');
+  setSrcType('hourly');
   renderFavChips(); applyTheme(); initUserName();
   const ai = document.getElementById('aiEndpointInput'); if(ai) ai.value = state.aiEndpoint || '';
   renderAccount();
@@ -1791,11 +2013,12 @@ function deleteProfile(id){
   const list = loadProfiles();
   if(list.length<=1 || id===activeProfileId()) return;
   const pr = list.find(p=>p.id===id);
-  if(!confirm('Delete profile "'+(pr?pr.name||pr.label:'')+'" and all of its data on this device? This cannot be undone.')) return;
-  try{ localStorage.removeItem(pStateKey(id)); }catch(e){}
-  saveProfiles(list.filter(p=>p.id!==id));
-  renderAccount();
-  toast('Profile deleted');
+  askConfirm({ title:'Delete profile?', message:'Delete "'+(pr?pr.name||pr.label:'')+'" and all of its data on this device? This cannot be undone.', yesText:'Delete profile', danger:true, onYes: ()=>{
+    try{ localStorage.removeItem(pStateKey(id)); }catch(e){}
+    saveProfiles(list.filter(p=>p.id!==id));
+    renderAccount();
+    toast('Profile deleted');
+  }});
 }
 
 /* ---- Google Sign-In (optional; needs GOOGLE_CLIENT_ID + registered origin) ---- */
@@ -1956,7 +2179,7 @@ document.getElementById('shareCloseBtn').addEventListener('click', closeShare);
 document.getElementById('shareDownloadBtn').addEventListener('click', downloadShareImage);
 document.getElementById('shareCopyBtn').addEventListener('click', copyShareText);
 document.getElementById('shareModal').addEventListener('click', e=>{ if(e.target.id==='shareModal') closeShare(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(document.getElementById('accountModal').classList.contains('show')) closeAccount(); if(document.getElementById('shareModal').classList.contains('show')) closeShare(); if(document.getElementById('clearModal').classList.contains('show')) closeClearModal(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(document.getElementById('accountModal').classList.contains('show')) closeAccount(); if(document.getElementById('shareModal').classList.contains('show')) closeShare(); if(document.getElementById('clearModal').classList.contains('show')) closeClearModal(); if(document.getElementById('incomeModal').classList.contains('show')) closeEditIncome(); if(document.getElementById('logoutModal').classList.contains('show')) closeLogoutModal(); if(document.getElementById('confirmModal').classList.contains('show')){ const cb=_confirmCb; _confirmCb=null; closeConfirm(); if(cb && cb.onNo) cb.onNo(); } } });
 
 document.getElementById('clearConfirmBtn').addEventListener('click', doClear);
 document.getElementById('clearCancelBtn').addEventListener('click', closeClearModal);
@@ -1967,7 +2190,7 @@ populatePeriodSelects();
 populateCurrencySelect();
 ensureRecurringForMonth(state.currentMonth);
 ensureRecurringIncomeForMonth(state.currentMonth);
-setIncomeMode(incomeGet(state.currentMonth).incomeMode || 'hourly');
+setSrcType('hourly');
 renderFavChips();
 applyTheme();
 initConverter();
