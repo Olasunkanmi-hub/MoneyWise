@@ -195,6 +195,7 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
 .toast.show{opacity:.96;}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 </head>
 <body data-theme="light">
 
@@ -359,6 +360,7 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
               <button class="btn-ghost btn" data-goto="planner" style="text-align:left;">📈 Adjust Income</button>
               <button class="btn-ghost btn" data-goto="transactions" style="text-align:left;">📉 View Transactions</button>
               <button class="btn-ghost btn" data-goto="goals" style="text-align:left;">🎯 Manage Goals</button>
+              <button class="btn-ghost btn" data-goto="converter" style="text-align:left;">💱 Convert Currency</button>
             </div>
           </div>
         </div>
@@ -376,9 +378,10 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
         </div>
         <div class="card">
           <div class="card-title"><span class="ic">📁</span> Import / Export</div>
-          <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">Export the current month to a CSV file, or import expenses from a CSV (columns: name, amount, category).</p>
+          <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">Export this month as a CSV (data) or a PDF report (summary + transactions), or import expenses from a CSV (columns: name, amount, category).</p>
           <div class="row">
             <button class="btn btn-ghost" id="exportBtn">⬇️ Export CSV</button>
+            <button class="btn btn-ghost" id="exportPdfBtn">🧾 Export PDF</button>
             <label class="btn btn-ghost file-label" style="text-align:center;">📤 Import CSV
               <input type="file" id="importFile" accept=".csv" style="display:none;">
             </label>
@@ -576,7 +579,11 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
 
     </div>
 
-    <footer>© 2026 OlaPurse. Built for tracking smarter, saving faster.</footer>
+    <footer>
+      <div style="font-weight:700; color:var(--text);">OlaPurse — Personal Finance Dashboard</div>
+      <div style="margin-top:4px;">Designed &amp; built by Olasunkanmi Oladele · Vanilla HTML, CSS &amp; JavaScript (no frameworks)</div>
+      <div style="margin-top:2px;">© 2026 · Tracking smarter, saving faster</div>
+    </footer>
   </main>
 </div>
 
@@ -696,7 +703,7 @@ const NAV = [
   {id:'goals', label:'Goals', icon:'🎯'},
   {id:'networth', label:'Net Worth', icon:'💰'},
   {id:'reports', label:'Reports', icon:'📊'},
-  {id:'converter', label:'Converter', icon:'💱'},
+  {id:'converter', label:'Currency Converter', icon:'💱'},
   {id:'assistant', label:'Assistant', icon:SPARK_ICON},
   {id:'settings', label:'Settings', icon:'⚙️'},
 ];
@@ -1158,6 +1165,44 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
   const a = document.createElement('a');
   a.href = url; a.download = `olapurse-${state.currentMonth}.csv`; a.click(); URL.revokeObjectURL(url);
 });
+/* ---- PDF report export (uses jsPDF; needs internet to load the library) ---- */
+function fmtPdf(n){ if(isNaN(n)) n=0; return currencyCode()+' '+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function exportPDF(){
+  if(!(window.jspdf && window.jspdf.jsPDF)){ toast('PDF export needs an internet connection'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const s = assistantSnapshot();
+  const mX = 48; let y = 60;
+  doc.setFont('helvetica','bold'); doc.setFontSize(22); doc.setTextColor(60,60,75); doc.text('OlaPurse', mX, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(12); doc.setTextColor(120,120,130);
+  doc.text(s.monthLabel + ' report', mX, y+20);
+  doc.text('Generated ' + new Date().toLocaleDateString(), mX, y+36);
+  y += 74;
+  const sr = s.income.monthly>0 ? Math.round((s.balance/s.income.monthly)*100)+'%' : '—';
+  const summary = [['Total income', fmtPdf(s.income.monthly)],['Total expenses', fmtPdf(s.totalExp)],['Balance', fmtPdf(s.balance)],['Savings rate', sr]];
+  doc.setFontSize(12);
+  summary.forEach(([k,v])=>{ doc.setTextColor(110,110,120); doc.text(k, mX, y); doc.setTextColor(25,25,35); doc.text(String(v), 330, y); y+=22; });
+  y += 12;
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(30,30,40); doc.text('Transactions', mX, y);
+  doc.setDrawColor(220,220,225); doc.line(mX, y+6, 547, y+6); y += 28;
+  doc.setFont('helvetica','normal'); doc.setFontSize(11);
+  const txs = monthsExpenses(state.currentMonth);
+  if(!txs.length){ doc.setTextColor(150,150,160); doc.text('No transactions for this month.', mX, y); y += 20; }
+  else {
+    txs.forEach(e=>{
+      if(y > 780){ doc.addPage(); y = 60; }
+      doc.setTextColor(45,45,55); doc.text(String(e.name).slice(0,42), mX, y);
+      doc.setTextColor(130,130,140); doc.text(String(e.cat), 320, y);
+      doc.setTextColor(20,20,30); doc.text(fmtPdf(e.amount), 452, y);
+      y += 18;
+    });
+  }
+  doc.setFontSize(9); doc.setTextColor(150,150,160);
+  doc.text('Developed by Olasunkanmi Oladele  ·  OlaPurse  ·  HTML, CSS & JavaScript', mX, 812);
+  doc.save('olapurse-'+state.currentMonth+'-report.pdf');
+  toast('PDF report exported');
+}
+document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
 document.getElementById('importFile').addEventListener('change', (e)=>{
   const file = e.target.files[0]; if(!file) return;
   const reader = new FileReader();
@@ -1267,10 +1312,11 @@ function renderAll(){
   document.getElementById('weeklyVal2').textContent = fmt(income.weekly);
   document.getElementById('monthlyVal2').textContent = fmt(income.monthly);
   document.getElementById('yearlyVal2').textContent = fmt(income.yearly);
-  document.getElementById('recentList').innerHTML = monthExpenses.length ? monthExpenses.slice(0,5).map(e=>expenseRowHTML(e,false)).join('') : '<div class="empty">No expenses yet this month</div>';
+  document.getElementById('recentList').innerHTML = monthExpenses.length ? monthExpenses.slice(0,5).map(e=>expenseRowHTML(e,false)).join('') : '<div class="empty">No transactions yet. Add your first expense above to get started. 💸</div>';
   const search = (document.getElementById('searchInput').value||'').toLowerCase();
   const filtered = monthExpenses.filter(e=> e.name.toLowerCase().includes(search) || e.cat.toLowerCase().includes(search));
-  document.getElementById('allList').innerHTML = filtered.length ? filtered.map(e=>expenseRowHTML(e,true)).join('') : '<div class="empty">No transactions found</div>';
+  const allEmptyMsg = monthExpenses.length ? 'No transactions match your search.' : 'No transactions yet. Add your first expense on the Dashboard to get started.';
+  document.getElementById('allList').innerHTML = filtered.length ? filtered.map(e=>expenseRowHTML(e,true)).join('') : '<div class="empty">'+allEmptyMsg+'</div>';
   document.getElementById('txTotal').textContent = fmt(totalExp);
   document.getElementById('usagePct').textContent = usage.toFixed(1)+'%';
   document.getElementById('usageBar').style.width = usage+'%';
@@ -1291,7 +1337,7 @@ function renderAll(){
     if(limit){ if(c.value >= limit) badge = '<span class="badge-over">over '+fmt(limit)+' limit</span>'; else if(c.value >= limit*0.85) badge = '<span class="badge-warn">near '+fmt(limit)+' limit</span>'; }
     return `<div style="margin-bottom:14px;"><div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px; gap:8px; flex-wrap:wrap;"><span>${meta.icon} ${c.name} ${badge}</span><b>${fmt(c.value)} <span style="color:var(--muted); font-weight:400;">(${pct.toFixed(0)}%)</span></b></div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%; background:${meta.color};"></div></div></div>`;
   }).join('') : '<div class="empty">No data yet</div>';
-  document.getElementById('dashGoals').innerHTML = state.goals.length ? state.goals.map(g=>goalBarHTML(g)).join('') : '<div class="empty">No goals yet</div>';
+  document.getElementById('dashGoals').innerHTML = state.goals.length ? state.goals.map(g=>goalBarHTML(g)).join('') : '<div class="empty">No savings goals yet. Set one to start tracking your progress. 🎯</div>';
   document.getElementById('goalsList').innerHTML = state.goals.length ? state.goals.map(g=>`
     <div class="goal-card">${goalBarHTML(g)}
       <div class="goal-actions">
