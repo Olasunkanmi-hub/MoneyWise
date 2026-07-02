@@ -210,7 +210,8 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
     <div class="nav-divider"></div>
     <div style="padding:0 12px;">
       <button class="nav-item" id="helpBtn"><span class="nav-icon">❓</span> Help</button>
-      <button class="nav-item" id="clearDataBtn"><span class="nav-icon">🗑️</span> Clear This Month</button>
+      <button class="nav-item" id="clearDataBtn"><span class="nav-icon">🗑️</span> Clear data</button>
+      <button class="nav-item" id="logoutBtn"><span class="nav-icon">🚪</span> Log out</button>
     </div>
     <div class="promo">
       <p>Track smarter.</p>
@@ -521,7 +522,7 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
           <div class="faq"><h4>How do category budget limits work?</h4><p>Set a limit per category in Budget Planner. When your spending in that category gets close to (85%+) or exceeds the limit, you'll see a warning badge on the Dashboard and Reports pages.</p></div>
           <div class="faq"><h4>Does the currency converter need internet?</h4><p>Yes — it fetches live exchange rates from a public API. If you're offline, it will use the last successfully fetched rate for that currency pair if available.</p></div>
           <div class="faq"><h4>How do I switch months or years?</h4><p>Use the Year and Month dropdowns in the top bar. Recurring expenses automatically carry forward when you move to a new month.</p></div>
-          <div class="faq"><h4>What does "Clear This Month" do?</h4><p>It permanently deletes the expenses logged for the month you're currently viewing — nothing else. Your income, savings goals, budget limits, and every other month stay exactly as they were. Use it to redo a month from scratch. It can't be undone.</p></div>
+          <div class="faq"><h4>What does "Clear data" do?</h4><p>It opens a dialog where you pick exactly what to remove — this month's expenses, this month's income, savings goals, budget limits, net worth accounts, or the assistant chat — and anything you leave unticked stays. There's also a "full reset" option to wipe the whole profile. It can't be undone, so back up first if unsure (Settings → Backup).</p></div>
           <div class="faq"><h4>Is the Financial Assistant private?</h4><p>Yes. It runs entirely on your device and reads the numbers you've already entered to answer your questions. Nothing you type or track is sent anywhere.</p></div>
         </div>
       </section>
@@ -631,6 +632,34 @@ footer{text-align:center; font-size:12px; color:var(--muted); padding:24px 0 32p
       <button class="btn btn-ghost" id="shareCloseBtn" style="flex:0 0 auto;">Close</button>
     </div>
   </div>
+</div>
+
+<!-- CLEAR DATA MODAL -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Clear data">
+    <h3>Clear data</h3>
+    <p style="font-size:12.5px; color:var(--muted); margin-bottom:14px;">Pick what to remove — anything you leave unticked stays. This can't be undone, so consider a backup first (Settings → Backup).</p>
+    <label class="checkbox-row"><input type="checkbox" id="clrExpenses" checked> Expenses for <b id="clrMonthLabel">this month</b></label>
+    <label class="checkbox-row"><input type="checkbox" id="clrIncome"> Income for this month</label>
+    <label class="checkbox-row"><input type="checkbox" id="clrGoals"> Savings goals</label>
+    <label class="checkbox-row"><input type="checkbox" id="clrBudgets"> Budget limits</label>
+    <label class="checkbox-row"><input type="checkbox" id="clrAccounts"> Net worth accounts</label>
+    <label class="checkbox-row"><input type="checkbox" id="clrChat"> Assistant chat</label>
+    <div style="border-top:1px solid var(--border); margin:6px 0 12px;"></div>
+    <label class="checkbox-row" style="color:#e11d48; font-weight:600;"><input type="checkbox" id="clrEverything"> Everything — full reset of this profile (all months)</label>
+    <div class="modal-actions" style="margin-top:8px;">
+      <button class="btn btn-danger" id="clearConfirmBtn" style="flex:1;">Clear selected</button>
+      <button class="btn btn-ghost" id="clearCancelBtn" style="flex:0 0 auto;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCK / LOGOUT SCREEN -->
+<div id="lockScreen" style="display:none; position:fixed; inset:0; z-index:300; background:linear-gradient(135deg,#6366f1,#3b82f6); color:#fff; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
+  <div style="width:64px; height:64px; margin-bottom:18px; border-radius:16px; overflow:hidden;" id="lockIcon"></div>
+  <h2 style="font-size:22px; font-weight:800; margin-bottom:8px;">You're logged out</h2>
+  <p style="font-size:14px; opacity:.92; max-width:330px; margin-bottom:22px; line-height:1.5;">Your data is saved safely on this device. Open OlaPurse again whenever you're ready.</p>
+  <button class="btn" id="lockResumeBtn" style="background:#fff; color:#4338ca;">Open OlaPurse</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -782,6 +811,7 @@ const BRAND_SVG = `
   <circle cx="19.5" cy="23" r="2" fill="#fff"/>
 </svg>`;
 document.getElementById('brandIcon').innerHTML = BRAND_SVG;
+(function(){ const li=document.getElementById('lockIcon'); if(li) li.innerHTML = BRAND_SVG; })();
 (function setFavicon(){
   try{
     const svg = BRAND_SVG.replace('width="100%" height="100%"', '').trim();
@@ -862,13 +892,63 @@ document.querySelectorAll('[data-goto]').forEach(b=> b.onclick = ()=> goTo(b.dat
 document.getElementById('helpBtn').onclick = ()=> goTo('help');
 
 /* Clear THIS MONTH only — income, goals, budgets and every other month stay untouched. */
-document.getElementById('clearDataBtn').onclick = ()=>{
-  const label = currentMonthLabel();
-  const count = monthsExpenses(state.currentMonth).length;
-  if(count===0){ alert(`There are no expenses to clear for ${label}.`); return; }
-  const ok = confirm(`Clear all ${count} expense${count>1?'s':''} for ${label}?\n\nYour income, savings goals, budget limits, and every other month stay exactly as they are. This can't be undone.`);
-  if(ok){ state.expenses = state.expenses.filter(e=> e.month !== state.currentMonth); save(); renderAll(); }
-};
+/* ---- Clear data: choose what to remove ---- */
+function clearChat(){ const log=document.getElementById('chatLog'); if(log) log.innerHTML=''; chatGreeted=false; }
+function openClearModal(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('clrMonthLabel').textContent = currentMonthLabel();
+  document.getElementById('clrExpenses').checked = true;
+  ['clrIncome','clrGoals','clrBudgets','clrAccounts','clrChat','clrEverything'].forEach(id=> document.getElementById(id).checked = false);
+  document.getElementById('clearModal').classList.add('show');
+}
+function closeClearModal(){ document.getElementById('clearModal').classList.remove('show'); }
+function doClear(){
+  if(document.getElementById('clrEverything').checked){
+    if(!confirm('Erase EVERYTHING on this profile — all months, income, goals, budgets, net worth, and the assistant chat? This cannot be undone.')) return;
+    const keep = { dark: state.dark, currency: state.currency, userName: state.userName };
+    state = Object.assign(emptyState(), keep);
+    state.currentMonth = defaultMonthKey();
+    clearChat(); save();
+    populatePeriodSelects(); populateCurrencySelect(); setIncomeMode('hourly'); renderFavChips(); applyTheme();
+    closeClearModal(); goTo('dashboard'); toast('Everything cleared'); return;
+  }
+  const opts = {
+    expenses: document.getElementById('clrExpenses').checked,
+    income:   document.getElementById('clrIncome').checked,
+    goals:    document.getElementById('clrGoals').checked,
+    budgets:  document.getElementById('clrBudgets').checked,
+    accounts: document.getElementById('clrAccounts').checked,
+    chat:     document.getElementById('clrChat').checked,
+  };
+  if(!Object.values(opts).some(Boolean)){ toast('Nothing selected'); return; }
+  if(!confirm('Clear the selected items? This cannot be undone.')) return;
+  if(opts.expenses) state.expenses = state.expenses.filter(e=> e.month !== state.currentMonth);
+  if(opts.income && state.incomeByMonth) delete state.incomeByMonth[state.currentMonth];
+  if(opts.goals) state.goals = [];
+  if(opts.budgets) state.budgets = {};
+  if(opts.accounts) state.accounts = [];
+  if(opts.chat) clearChat();
+  save();
+  setIncomeMode(incomeGet(state.currentMonth).incomeMode || 'hourly');
+  renderAll(); closeClearModal(); toast('Cleared');
+}
+document.getElementById('clearDataBtn').onclick = openClearModal;
+
+/* ---- Log out (lock screen) ---- */
+function logout(){
+  if(!confirm('Log out of OlaPurse? Your data stays saved on this device.')) return;
+  try{ if(window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('lockScreen').style.display = 'flex';
+  // If OlaPurse was installed and opened as its own app window, try to close it; browsers block this in a normal tab.
+  const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone;
+  if(standalone){ try{ window.close(); }catch(e){} }
+}
+function resumeApp(){ document.getElementById('lockScreen').style.display = 'none'; }
+document.getElementById('logoutBtn').onclick = logout;
+document.getElementById('lockResumeBtn').onclick = resumeApp;
 document.getElementById('menuBtn').onclick = ()=>{ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
 document.getElementById('overlay').onclick = ()=>{ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); };
 
@@ -1830,7 +1910,11 @@ document.getElementById('shareCloseBtn').addEventListener('click', closeShare);
 document.getElementById('shareDownloadBtn').addEventListener('click', downloadShareImage);
 document.getElementById('shareCopyBtn').addEventListener('click', copyShareText);
 document.getElementById('shareModal').addEventListener('click', e=>{ if(e.target.id==='shareModal') closeShare(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(document.getElementById('accountModal').classList.contains('show')) closeAccount(); if(document.getElementById('shareModal').classList.contains('show')) closeShare(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(document.getElementById('accountModal').classList.contains('show')) closeAccount(); if(document.getElementById('shareModal').classList.contains('show')) closeShare(); if(document.getElementById('clearModal').classList.contains('show')) closeClearModal(); } });
+
+document.getElementById('clearConfirmBtn').addEventListener('click', doClear);
+document.getElementById('clearCancelBtn').addEventListener('click', closeClearModal);
+document.getElementById('clearModal').addEventListener('click', e=>{ if(e.target.id==='clearModal') closeClearModal(); });
 
 /* ---------- INIT ---------- */
 populatePeriodSelects();
